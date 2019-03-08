@@ -6,7 +6,8 @@ A simple Python project that listen to one or more MQTT topics and save all the 
 
 - Python 3.x (tested on 3.7)
 - Linux (not tested on other OS)
-- A running MQTT broker
+- A working, available MQTT broker
+- A working, available MongoDB server
 - Libraries:
     * [pymongo](http://api.mongodb.com/python/current/)
     * [paho-mqtt](https://pypi.org/project/paho-mqtt/)
