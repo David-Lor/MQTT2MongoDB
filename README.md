@@ -34,3 +34,8 @@ Alternatively, environment variables with the same names as these UPPERCASE vari
     "datetime": "08/03/2019 22:26:31"
 }
 ```
+
+## TODO
+
+- Implement Queue
+- Get timestamp of received messages right when they arrive

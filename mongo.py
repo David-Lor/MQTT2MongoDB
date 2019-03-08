@@ -67,6 +67,8 @@ class Mongo(object):
                 "qos": msg.qos,
                 "timestamp": int(now.timestamp()),
                 "datetime": now.strftime(MONGO_DATETIME_FORMAT),
+                # TODO datetime must be fetched right when the message is received
+                # It will be wrong when a queued message is stored
             }
             result = self.collection.insert_one(document)
             print("Saved in Mongo document ID", result.inserted_id)
