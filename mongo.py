@@ -18,7 +18,7 @@ MONGO_DATETIME_FORMAT = "%d/%m/%Y %H:%M:%S"
 MONGO_URI = os.getenv("MONGO_URI", MONGO_URI)
 MONGO_DB = os.getenv("MONGO_DB", MONGO_DB)
 MONGO_COLLECTION = os.getenv("MONGO_COLLECTION", MONGO_COLLECTION)
-MONGO_TIMEOUT = os.getenv("MONGO_TIMEOUT", MONGO_TIMEOUT)
+MONGO_TIMEOUT = float(os.getenv("MONGO_TIMEOUT", MONGO_TIMEOUT))
 MONGO_DATETIME_FORMAT = os.getenv("MONGO_DATETIME_FORMAT", MONGO_DATETIME_FORMAT)
 
 
@@ -31,7 +31,7 @@ class Mongo(object):
 
     def connect(self):
         print("Connecting Mongo")
-        self.client = pymongo.MongoClient(MONGO_URI, serverSelectionTimeoutMS=int(MONGO_TIMEOUT*1000))
+        self.client = pymongo.MongoClient(MONGO_URI, serverSelectionTimeoutMS=MONGO_TIMEOUT*1000.0)
         self.database = self.client.get_database(MONGO_DB)
         self.collection = self.database.get_collection(MONGO_COLLECTION)
 
