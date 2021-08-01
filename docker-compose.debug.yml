@@ -1,0 +1,18 @@
+version: '3.4'
+
+services:
+  mqtt2mongodb:
+    image: mqtt2mongodb
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    command: ["sh", "-c", "pip install debugpy -t /tmp && python /tmp/debugpy --wait-for-client --listen 0.0.0.0:5678 __main__.py "]
+    ports:
+      - 5678:5678
+  mqtt:
+    ports:
+      - 1883:1883
+      - 9001:9001
+  mongodb:
+    ports:
+      - 27017:27017

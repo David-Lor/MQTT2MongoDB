@@ -1,0 +1,34 @@
+version: '3.4'
+
+services:
+  mqtt2mongodb:
+    image: mqtt2mongodb
+    restart: always
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    depends_on:
+      - mongodb
+      - mqtt
+
+  mqtt:
+    image: eclipse-mosquitto
+    restart: always
+    expose:
+      - 1883
+      - 9001
+    command: ["/usr/sbin/mosquitto", "-c", "/mosquitto-no-auth.conf"]
+
+  mongodb:
+    image: mongo
+    restart: always
+    volumes:
+      - mongodb_volume:/data/db
+    expose:
+      - 27017
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: user
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+
+volumes:
+  mongodb_volume:

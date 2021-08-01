@@ -1,0 +1,106 @@
+# from typing import List
+from datetime import datetime
+from queue import Queue
+import pymongo, threading
+
+
+# MONGO_URI = "mongodb://127.0.0.1:27017"  # mongodb://user:pass@ip:port || mongodb://ip:port
+# MONGO_DB = "domotics"
+# MONGO_COLLECTION = "mqtt"
+# MONGO_TIMEOUT = 1  # Time in seconds
+# MONGO_DATETIME_FORMAT = "%d/%m/%Y %H:%M:%S"
+
+# MONGO_URI = os.getenv("MONGO_URI", MONGO_URI)
+# MONGO_DB = os.getenv("MONGO_DB", MONGO_DB)
+# MONGO_COLLECTION = os.getenv("MONGO_COLLECTION", MONGO_COLLECTION)
+# MONGO_TIMEOUT = float(os.getenv("MONGO_TIMEOUT", MONGO_TIMEOUT))
+# MONGO_DATETIME_FORMAT = os.getenv("MONGO_DATETIME_FORMAT", MONGO_DATETIME_FORMAT)
+
+
+class Mongo(object):
+    def __init__(self, mongoConfig:dict, queue:Queue):
+        self.__set_vars(mongoConfig)
+        self.queue: Queue = queue
+        self.client: pymongo.MongoClient = None
+        self.database: pymongo.database.Database = None
+        self.collection: pymongo.collection.Collection = None
+
+    def __set_vars(self, config:dict):
+        self.MONGO_HOST = config["HOST"]
+        self.MONGO_PORT = config["PORT"]
+
+        self.MONGO_USER = config["USER"] if config["USER"] else None
+        self.MONGO_PASS = config["PASS"] if config["PASS"] else None
+
+        self.MONGO_DB = config["DATABASE"]
+        self.MONGO_COLLECTION = config["COLLECTION"]
+        
+        self.MONGO_TIMEOUT = config["TIMEOUT"]
+        self.MONGO_DATETIME_FORMAT = "%d/%m/%Y %H:%M:%S"
+
+    def connect(self,):
+        print("Connecting Mongo")
+        self.client = pymongo.MongoClient(
+            host=self.MONGO_HOST,
+            port=self.MONGO_PORT,
+            username=self.MONGO_USER,
+            password=self.MONGO_PASS
+        )
+        self.database = self.client.get_database(self.MONGO_DB)
+        self.collection = self.database.get_collection(self.MONGO_COLLECTION)
+        self.connected()
+
+    def disconnect(self):
+        print("Disconnecting Mongo")
+        if self.client:
+            self.client.close()
+            self.client = None
+
+    def connected(self) -> bool:
+        if not self.client:
+            return False
+        try:
+            self.client.admin.command("ismaster")
+        except pymongo.errors.PyMongoError:
+            return False
+        else:
+            return True
+
+    def __enqueue(self, msg: dict):
+        print("Enqueuing")
+        self.queue.put(msg)
+
+    def __sync_queue(self,):
+        if self.queue.qsize():
+            self.save(self.queue.get())
+
+    def __store_thread_f(self, msg: dict):
+        print("Storing")
+        now = datetime.now()
+        try:
+            result = self.collection.insert_one(msg)
+            print("Saved in Mongo document ID", result.inserted_id)
+            if not result.acknowledged:
+                # Enqueue message if it was not saved properly
+                self.__enqueue(msg)
+        except Exception as ex:
+            print(ex)
+
+    def __store(self, msg:dict):
+        th = threading.Thread(target=self.__store_thread_f, args=(msg,))
+        th.daemon = True
+        th.start()
+
+    def save(self, msg: dict):
+        print("Saving")
+        if self.connected():
+            self.__store(msg)
+        else:
+            self.__enqueue(msg)
+
+    def run(self,):
+        while True:
+            try:
+                self.__sync_queue()
+            except Exception as err:
+                print(f"ERROR: {err}")
